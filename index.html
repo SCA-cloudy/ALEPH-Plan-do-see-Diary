@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>플랜두씨 다이어리 — Plan · Do · See</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ===================== START 화면 ===================== -->
+<section id="start-screen">
+  <div class="start-inner">
+    <div class="start-logo">🪴</div>
+    <h1>플랜두씨 다이어리</h1>
+    <p class="start-tagline">Plan · Do · See — 원하는 공간을 선택하세요</p>
+    <div class="theme-cards">
+      <button class="theme-card" data-theme="cd_player">
+        <div class="theme-card-icon">💿</div>
+        <div class="theme-card-name">CD Player</div>
+        <div class="theme-card-desc">턴테이블처럼 계획을 앨범으로, 할 일을 트랙으로</div>
+      </button>
+      <button class="theme-card" data-theme="diary_desk">
+        <div class="theme-card-icon">📔</div>
+        <div class="theme-card-name">Diary Desk</div>
+        <div class="theme-card-desc">책상 위 일기장처럼, 페이지를 넘기듯 기록</div>
+      </button>
+      <button class="theme-card" data-theme="stream_deck">
+        <div class="theme-card-icon">🎛️</div>
+        <div class="theme-card-name">Stream Deck+</div>
+        <div class="theme-card-desc">컨트롤 패널의 매크로 버튼처럼 계획을 실행</div>
+      </button>
+    </div>
+    <p class="start-note">테마는 표현만 바꿀 뿐 데이터는 동일합니다. 언제든 Settings에서 바꿀 수 있어요.</p>
+  </div>
+</section>
+
+<!-- ===================== SPACE (테마 진입 후) ===================== -->
+<div id="space" style="display:none;">
+
+  <div class="banner">
+    ⚠️ 지금은 로그인이 없어 링크를 아는 사람은 누구나 볼 수 있습니다. 남이 봐도 괜찮은 내용만 넣으세요.
+  </div>
+
+  <div class="space-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span id="theme-icon">🪴</span>
+        <span id="theme-name">플랜두씨</span>
+      </div>
+      <nav class="side-nav">
+        <button data-tab="schedule" class="side-tab active">🕐 Schedule</button>
+        <button data-tab="plans" class="side-tab">📋 Plan</button>
+        <button data-tab="todos" class="side-tab">✅ Todo</button>
+        <button data-tab="do" class="side-tab">⏱ Do</button>
+        <button data-tab="diary" class="side-tab">📔 Diary</button>
+        <button data-tab="monthly" class="side-tab">📊 월간</button>
+        <button data-tab="search" class="side-tab">🔍 Search</button>
+        <button data-tab="review" class="side-tab">🔁 See</button>
+        <button data-tab="settings" class="side-tab">⚙️ Settings</button>
+      </nav>
+    </aside>
+
+    <main class="space-main">
+
+      <!-- ===== Schedule ===== -->
+      <section id="tab-schedule" class="tab-panel">
+        <h2>오늘의 Schedule</h2>
+        <div class="controls-row">
+          <div class="field"><label>날짜</label><input type="date" id="sched-view-date"></div>
+        </div>
+        <div class="panel">
+          <h3>일정 추가</h3>
+          <div class="grid-3">
+            <div class="field"><label>시간</label><input type="time" id="sched-time"></div>
+            <div class="field"><label>내용</label><input id="sched-title" placeholder="예: 프로젝트 회의"></div>
+            <div class="field"><label>장소</label><input id="sched-location" placeholder="선택"></div>
+          </div>
+          <div class="field"><label>메모</label><input id="sched-memo" placeholder="선택"></div>
+          <button class="primary" id="sched-submit-btn">일정 저장</button>
+        </div>
+        <div id="schedule-list"></div>
+      </section>
+
+      <!-- ===== Plan ===== -->
+      <section id="tab-plans" class="tab-panel" style="display:none;">
+        <h2 id="plan-section-title">계획 세우기</h2>
+        <div class="panel">
+          <div class="grid-2">
+            <div class="field"><label>제목</label><input id="plan-title" placeholder="예: 5km 러닝 습관 만들기"></div>
+            <div class="field"><label>카테고리</label><select id="plan-category"></select></div>
+          </div>
+          <div id="plan-details-extra" class="details-extra"></div>
+          <div class="grid-3">
+            <div class="field"><label>기간 시작</label><input type="date" id="plan-period-start"></div>
+            <div class="field"><label>기간 종료</label><input type="date" id="plan-period-end"></div>
+            <div class="field"><label>우선순위 (선택)</label>
+              <select id="plan-priority">
+                <option value="">설정 안 함</option>
+                <option value="high">높음</option><option value="medium">보통</option><option value="low">낮음</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>성공 기준 (체크리스트)</label>
+            <div id="plan-criteria-rows"></div>
+            <button type="button" class="ghost small" id="plan-add-criterion">+ 항목 추가</button>
+          </div>
+          <div class="field">
+            <label>예상 시간 (자유 입력 — 예: 30분 / 2시간 / 주 3시간)</label>
+            <div class="grid-2">
+              <input id="plan-estimated-raw" placeholder="예: 주 3시간">
+              <input type="number" id="plan-estimated-minutes" placeholder="정규화된 분(자동 계산, 수정 가능)">
+            </div>
+          </div>
+          <button class="primary" id="plan-submit-btn">계획 저장</button>
+          <span id="plan-edit-hint" class="meta" style="display:none;">✏️ 수정 중입니다. 저장하면 이전 내용은 이력에 보존됩니다. <button class="ghost small" id="plan-cancel-edit">취소</button></span>
+        </div>
+        <h3>내 계획 목록</h3>
+        <div id="plans-list"></div>
+      </section>
+
+      <!-- ===== Todo ===== -->
+      <section id="tab-todos" class="tab-panel" style="display:none;">
+        <h2>Todo</h2>
+        <div class="panel">
+          <div class="grid-2">
+            <div class="field"><label>제목</label><input id="todo-title"></div>
+            <div class="field"><label>마감일</label><input type="date" id="todo-due"></div>
+          </div>
+          <button type="button" class="ghost small" id="todo-toggle-detail">상세 옵션 펼치기</button>
+          <div id="todo-detail-fields" style="display:none;margin-top:8px;">
+            <div class="grid-3">
+              <div class="field"><label>연결할 계획 (선택)</label><select id="todo-plan-select"><option value="">연결 안 함</option></select></div>
+              <div class="field"><label>우선순위</label>
+                <select id="todo-priority"><option value="high">높음</option><option value="medium" selected>보통</option><option value="low">낮음</option></select>
+              </div>
+              <div class="field"><label>태그(쉼표)</label><input id="todo-tags"></div>
+            </div>
+            <div class="grid-2">
+              <div class="field"><label>예상 시간(자유 입력)</label><input id="todo-estimated-raw" placeholder="예: 30분"></div>
+              <div class="field"><label>예상 시간(분, 정규화)</label><input type="number" id="todo-estimated-minutes"></div>
+            </div>
+            <div class="field"><label>메모</label><textarea id="todo-memo"></textarea></div>
+          </div>
+          <button class="primary" id="todo-submit-btn" style="margin-top:10px;">할 일 저장</button>
+          <span id="todo-edit-hint" class="meta" style="display:none;">✏️ 수정 중 <button class="ghost small" id="todo-cancel-edit">취소</button></span>
+        </div>
+
+        <div class="controls-row">
+          <div class="field"><label>보기 범위</label>
+            <select id="todo-scope-select"><option value="all">전체 Todo</option></select>
+          </div>
+          <div class="field"><label>검색</label><input id="todo-search" placeholder="제목 검색"></div>
+          <div class="field"><label>상태</label>
+            <select id="todo-filter-status"><option value="all">전체</option><option value="in_progress">진행 중</option><option value="done">완료</option></select>
+          </div>
+          <div class="field"><label>정렬 기준</label>
+            <select id="todo-sort">
+              <option value="due_asc">마감일 빠른순 (동률: 우선순위→생성순)</option>
+              <option value="priority_desc">우선순위 높은순 (동률: 마감일순)</option>
+              <option value="created_desc">최근 생성순</option>
+            </select>
+          </div>
+        </div>
+        <p class="sort-note">※ 완료된 항목은 기본적으로 숨겨져요. "완료" 필터로 다시 볼 수 있어요.</p>
+        <div id="todos-list"></div>
+      </section>
+
+      <!-- ===== Do ===== -->
+      <section id="tab-do" class="tab-panel" style="display:none;">
+        <h2 id="do-section-title">Do — 실제 실행</h2>
+        <div class="plan-select-bar">
+          <label style="margin:0;">할 일 선택:</label>
+          <select id="do-todo-select"></select>
+        </div>
+
+        <div class="panel" id="timer-panel">
+          <h3 id="timer-title">타이머</h3>
+          <div class="timer-display" id="timer-display">00:00:00</div>
+          <div class="timer-controls">
+            <button class="primary" id="timer-start-btn">START</button>
+            <button class="ghost" id="timer-pause-btn" style="display:none;">PAUSE</button>
+            <button class="ghost" id="timer-resume-btn" style="display:none;">RESUME</button>
+            <button class="danger-btn" id="timer-stop-btn" style="display:none;">STOP</button>
+            <button class="primary" id="timer-complete-btn" style="display:none;">COMPLETE</button>
+          </div>
+          <div id="stop-reason-box" style="display:none;margin-top:10px;">
+            <label>왜 중단했나요? (선택)</label>
+            <input id="stop-reason-input" placeholder="예: 비가 와서 실외 러닝 취소">
+            <button class="ghost small" id="stop-skip-btn">건너뛰기</button>
+            <button class="primary small" id="stop-save-btn">저장</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>수동 기록 추가</h3>
+          <div class="grid-3">
+            <div class="field"><label>시작 시각</label><input type="datetime-local" id="log-start"></div>
+            <div class="field"><label>끝난 시각</label><input type="datetime-local" id="log-end"></div>
+            <div class="field"><label>실제 걸린 시간(분)</label><input type="number" id="log-actual"></div>
+          </div>
+          <div class="field"><label>막혔던 이유 (선택)</label><input id="log-blocker"></div>
+          <button class="primary" id="log-submit-btn">수동 기록 저장</button>
+        </div>
+
+        <h3>이 할 일의 실행 기록</h3>
+        <div id="logs-list"></div>
+      </section>
+
+      <!-- ===== Diary ===== -->
+      <section id="tab-diary" class="tab-panel" style="display:none;">
+        <h2>Diary</h2>
+        <div class="panel">
+          <div class="grid-2">
+            <div class="field"><label>날짜</label><input type="date" id="diary-date"></div>
+            <div class="field"><label>오늘의 기분</label><input id="diary-mood" placeholder="예: 뿌듯함"></div>
+          </div>
+          <div class="grid-2">
+            <div class="field"><label>기분을 표현하는 음악</label><input id="diary-music" placeholder="예: 아이유 - 밤편지"></div>
+            <div class="field"><label>먹은 음식</label><input id="diary-food" placeholder="예: 김치찌개"></div>
+          </div>
+          <div class="field"><label>특별한 사건</label><input id="diary-event"></div>
+          <div class="field"><label>하고 싶었던 말</label><input id="diary-wanted"></div>
+          <div class="field"><label>자유로운 오늘의 기록</label><textarea id="diary-free"></textarea></div>
+          <button class="primary" id="diary-submit-btn">기록 저장</button>
+        </div>
+        <div id="diary-list"></div>
+      </section>
+
+      <!-- ===== 월간 ===== -->
+      <section id="tab-monthly" class="tab-panel" style="display:none;">
+        <h2>이번 달 이동/진행</h2>
+        <div class="field" style="max-width:200px;"><label>월 선택</label><input type="month" id="monthly-select"></div>
+        <div class="stat-grid" id="monthly-stats"></div>
+        <div id="monthly-drilldown"></div>
+      </section>
+
+      <!-- ===== Search ===== -->
+      <section id="tab-search" class="tab-panel" style="display:none;">
+        <h2>날짜 + 키워드 검색</h2>
+        <div class="controls-row">
+          <div class="field"><label>시작일</label><input type="date" id="search-from"></div>
+          <div class="field"><label>종료일</label><input type="date" id="search-to"></div>
+          <div class="field"><label>키워드</label><input id="search-keyword" placeholder="검색어"></div>
+          <button class="primary" id="search-btn" style="align-self:flex-end;">검색</button>
+        </div>
+        <div id="search-results"></div>
+      </section>
+
+      <!-- ===== See / Review ===== -->
+      <section id="tab-review" class="tab-panel" style="display:none;">
+        <h2>See — 돌아보기</h2>
+        <div class="plan-select-bar">
+          <label style="margin:0;">계획 선택:</label>
+          <select id="review-plan-select"></select>
+        </div>
+        <div class="panel">
+          <div class="stat-grid">
+            <button class="stat" id="stat-plan"><div class="num" id="stat-plan-num">0</div><div class="lbl">계획 수(할일)</div></button>
+            <button class="stat" id="stat-done"><div class="num" id="stat-done-num">0</div><div class="lbl">완료 수</div></button>
+            <button class="stat" id="stat-overdue"><div class="num" id="stat-overdue-num">0</div><div class="lbl">지연 수</div></button>
+            <button class="stat" id="stat-blocked"><div class="num" id="stat-blocked-num">0</div><div class="lbl">막힘 수</div></button>
+            <button class="stat" id="stat-diff"><div class="num" id="stat-diff-num">0분</div><div class="lbl">실제−예상</div></button>
+          </div>
+          <p class="meta" id="review-time-detail"></p>
+          <div id="review-drilldown"></div>
+        </div>
+        <div class="panel">
+          <h3>다음 계획으로 넘길 한 줄</h3>
+          <div class="field"><input id="next-action-input" placeholder="예: 우천 시 대체 계획 미리 세워두기"></div>
+          <button class="primary" id="next-action-save">저장</button>
+          <div id="next-actions-list" style="margin-top:10px;"></div>
+        </div>
+      </section>
+
+      <!-- ===== Settings ===== -->
+      <section id="tab-settings" class="tab-panel" style="display:none;">
+        <h2>Settings</h2>
+        <div class="panel">
+          <h3>Theme</h3>
+          <div class="theme-cards small">
+            <button class="theme-card" data-theme="cd_player"><div class="theme-card-icon">💿</div><div class="theme-card-name">CD Player</div></button>
+            <button class="theme-card" data-theme="diary_desk"><div class="theme-card-icon">📔</div><div class="theme-card-name">Diary Desk</div></button>
+            <button class="theme-card" data-theme="stream_deck"><div class="theme-card-icon">🎛️</div><div class="theme-card-name">Stream Deck+</div></button>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>표시 시간대</h3>
+          <p class="meta">저장은 항상 UTC — 화면 표시·지연 판정 기준만 바뀝니다.</p>
+          <select id="display-timezone"></select>
+        </div>
+        <div class="panel">
+          <h3>Data</h3>
+          <button class="ghost" id="export-btn">전체 내보내기 (.json)</button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
