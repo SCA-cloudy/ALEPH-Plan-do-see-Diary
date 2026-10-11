@@ -1,0 +1,155 @@
+{
+  "schema_version": "pds-schema-v2",
+  "description": "PlanDoSee Deck(플랜두씨) 다이어리 — Plan/Todo/Do/See/Diary 데이터 계약. 화면은 Stream Deck+ 모양 하나로 고정이며, 키 한 칸 = 할 일(todos) 한 건이다.",
+  "timezone_rule": {
+    "storage": "모든 timestamptz 컬럼은 UTC로 저장한다.",
+    "display_timezone": "표시/지연판정 시간대의 기본값은 서울(Asia/Seoul)이며, 다른 지역 사용자는 설정에서 바꿀 수 있다(localStorage pds_display_timezone, 서버에는 저장하지 않음).",
+    "date_columns": "period_start/period_end/due_date/event_date/entry_date는 시간대 없는 date이며, 입력·표시는 선택된 표시 시간대의 달력일 기준이다.",
+    "time_columns": "todos.event_time은 시간대 없는 time(벽시계 시각)이다.",
+    "overdue_rule": "(status != 'done') AND (coalesce(end_date, due_date) < 선택된 표시 시간대(기본 Asia/Seoul) 기준 오늘)."
+  },
+  "ui_rule": "화면은 Stream Deck+ 모양(키 8칸·터치 스트립 4칸·노브 4개) 하나로 고정한다. 아이콘/색/시각은 todos 컬럼(icon, color, event_time)에 저장되는 데이터이며 화면 표현에만 쓰인다.",
+  "tables": [
+    {
+      "name": "plans",
+      "columns": {
+        "id": "uuid PK",
+        "title": "text not null",
+        "category": "text",
+        "details": "jsonb — 카테고리별 맞춤 입력",
+        "period_start": "date not null",
+        "period_end": "date not null",
+        "priority": "text, nullable — 필수 입력 아님",
+        "estimated_time_raw": "text — 사용자가 입력한 원문 (예: '주 3시간')",
+        "estimated_minutes": "integer default 0 — 분 단위 정규화 값, Review 계산 근거",
+        "created_at/updated_at": "timestamptz",
+        "is_deleted": "boolean"
+      },
+      "relations": [
+        "plan_success_criteria.plan_id -> plans.id",
+        "plan_history.plan_id -> plans.id",
+        "todos.plan_id -> plans.id (nullable)"
+      ]
+    },
+    {
+      "name": "plan_success_criteria",
+      "purpose": "성공 기준 체크리스트 (T06-C06)",
+      "columns": {
+        "id": "uuid PK",
+        "plan_id": "uuid FK",
+        "label": "text not null",
+        "is_checked": "boolean default false",
+        "order_no": "integer"
+      }
+    },
+    {
+      "name": "plan_history",
+      "purpose": "계획 수정 전 스냅샷(plan 행 + 그 시점 체크리스트). plans 행의 id는 유지되고 내용만 갱신된다 (T06-C08).",
+      "columns": {
+        "id": "uuid PK",
+        "plan_id": "uuid FK",
+        "version_no": "integer",
+        "snapshot": "jsonb {plan, success_criteria}",
+        "edited_at": "timestamptz"
+      }
+    },
+    {
+      "name": "todos",
+      "columns": {
+        "id": "uuid PK",
+        "plan_id": "uuid FK nullable",
+        "title": "text not null",
+        "memo": "text",
+        "due_date": "date",
+        "priority": "text default medium",
+        "tags": "text[]",
+        "estimated_time_raw": "text",
+        "estimated_minutes": "integer default 0",
+        "status": "text default in_progress — in_progress/done",
+        "created_at/updated_at": "timestamptz",
+        "is_deleted": "boolean",
+        "event_time": "time nullable — 키에 표시할 시각",
+        "location": "text",
+        "icon": "text default '' — 키 아이콘(이모지/2~3글자)",
+        "color": "text default '' — 키 배경색 #rrggbb (형식이 다르면 화면에서 기본색으로 대체)",
+        "end_date": "date nullable — 여러 날 일정의 종료일(due_date=시작일). 여러 날 일정은 타이머 없이 완료 체크만 한다. 지연 판정은 coalesce(end_date, due_date) 기준."
+      },
+      "relations": [
+        "execution_logs.todo_id -> todos.id",
+        "todo_completions.todo_id -> todos.id"
+      ],
+      "purpose": "할 일이자 덱의 키 한 칸(일정). due_date가 속한 날짜의 키로 표시된다."
+    },
+    {
+      "name": "todo_completions",
+      "purpose": "완료 이벤트 로그. todo_id에 UNIQUE 제약이 걸려 할 일당 1건만 저장되고(T06-C21/22), 완료를 되돌리면 이 기록도 지운다. 앱은 추가로 UPDATE ... WHERE status<>'done' 조건부 갱신이 실제로 일어난 때만 INSERT 한다.",
+      "columns": {
+        "id": "uuid PK",
+        "todo_id": "uuid FK UNIQUE",
+        "completed_at": "timestamptz"
+      }
+    },
+    {
+      "name": "execution_logs",
+      "purpose": "Do(실행) 세션. 계획/할일의 예상값을 덮어쓰지 않는다 (T06-C27).",
+      "columns": {
+        "id": "uuid PK",
+        "todo_id": "uuid FK",
+        "status": "text — running/paused/stopped/completed",
+        "started_at": "timestamptz not null",
+        "ended_at": "timestamptz nullable",
+        "actual_minutes": "integer default 0 — work 구간 합계, 세션 종료 시 채워짐",
+        "blocker_reason": "text",
+        "created_at": "timestamptz"
+      },
+      "relations": [
+        "execution_segments.execution_log_id -> execution_logs.id"
+      ]
+    },
+    {
+      "name": "execution_segments",
+      "purpose": "PAUSE/RESUME 구간 이력. work 구간 합계가 execution_logs.actual_minutes가 된다.",
+      "columns": {
+        "id": "uuid PK",
+        "execution_log_id": "uuid FK",
+        "segment_type": "text — work/pause",
+        "segment_start": "timestamptz",
+        "segment_end": "timestamptz nullable"
+      }
+    },
+    {
+      "name": "diary_entries",
+      "purpose": "독립 자유 기록.",
+      "columns": {
+        "id": "uuid PK",
+        "entry_date": "date not null",
+        "mood": "text",
+        "mood_music": "text",
+        "event": "text",
+        "wanted_to_say": "text",
+        "food": "text",
+        "free_text": "text"
+      }
+    },
+    {
+      "name": "next_actions",
+      "columns": {
+        "id": "uuid PK",
+        "plan_id": "uuid FK nullable",
+        "period_label": "text",
+        "note": "text",
+        "created_at": "timestamptz"
+      }
+    }
+  ],
+  "review_aggregation_rules": {
+    "plan_count": "해당 plan에 딸린, is_deleted=false인 todos 수 (T06-C28)",
+    "done_count": "그중 status='done' 수 (T06-C29)",
+    "overdue_count": "status!='done' AND due_date < 선택된 표시시간대 오늘, 완료건 중복집계 안함 (T06-C30)",
+    "blocked_count": "execution_logs.blocker_reason이 비어있지 않은 todo 수 (T06-C31)",
+    "estimated_total": "대상 todos.estimated_minutes 합계",
+    "actual_total": "대상 todos에 딸린 execution_logs.actual_minutes 합계, 없으면 0",
+    "diff": "actual_total - estimated_total (T06-C32)"
+  },
+  "scope_note": "키=할 일 구조. Diary/월간/검색은 과제 채점 기준(T06-C04~C83)에 없는 확장 기능이며 사용자 요청으로 추가됨. AI Review는 API 키 노출/과금 문제로 제외."
+}
