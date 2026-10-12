@@ -1630,6 +1630,21 @@ async function doLogout(){
   leaveToLogin();
 }
 
+// 계정 삭제: 서버 함수 delete_my_account()가 "요청한 본인"의 계정과 자료만 지운다.
+async function deleteMyAccount(){
+  const msg = $("del-msg");
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) { leaveToLogin(); return; }
+  if ($("del-confirm").value.trim().toLowerCase() !== (user.email || "").toLowerCase()) {
+    msg.textContent = "입력한 이메일이 내 이메일과 다릅니다. 삭제하지 않았어요.";
+    return;
+  }
+  const { error } = await sb.rpc("delete_my_account");
+  if (error) { msg.textContent = "삭제하지 못했어요. 잠시 뒤 다시 시도해 주세요."; return; }
+  try { await sb.auth.signOut({ scope: "local" }); } catch (e) { /* 계정이 이미 없어 서버 로그아웃은 실패할 수 있다 */ }
+  leaveToLogin();
+}
+
 // 앱 본체 시작: 로그인이 확인된 뒤에만 한 번 실행한다.
 async function startApp(user){
   if (appStarted) return;
@@ -1654,6 +1669,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   $("auth-tab-signup").addEventListener("click", () => setAuthMode("signup"));
   $("auth-form").addEventListener("submit", (e) => { e.preventDefault(); submitAuth(); });
   $("nav-logout").addEventListener("click", doLogout);
+  $("del-account").addEventListener("click", deleteMyAccount);
   setAuthMode("login");
 
   // 다른 탭에서 로그아웃했거나 로그인 상태가 끝나면 이 탭도 로그인 화면으로 돌린다. (콜백 안에서는 await 하지 않는다)

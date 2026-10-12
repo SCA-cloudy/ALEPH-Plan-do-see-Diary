@@ -452,6 +452,13 @@
       <p class="meta">일정·계획·할 일·실행 기록·Diary 등 전체 자료를 파일 하나(JSON)로 내려받아요.</p>
       <button class="btn ghost" id="export-btn">전체 내보내기 (.json)</button>
     </div>
+    <div class="card">
+      <h3>계정 삭제</h3>
+      <p class="meta">내 계정과 내 자료(계획·할 일·실행 기록·Diary 등)를 모두 지웁니다. 되돌릴 수 없어요. 먼저 위의 "전체 내보내기"로 내려받아 두세요.</p>
+      <div class="field"><label for="del-confirm">확인을 위해 내 이메일을 그대로 입력하세요</label><input id="del-confirm" type="email" autocomplete="off"></div>
+      <button class="btn ghost" id="del-account" type="button">계정과 자료 삭제</button>
+      <p class="meta" id="del-msg" role="status"></p>
+    </div>
   </section>
 
 </main>
