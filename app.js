@@ -1530,7 +1530,111 @@ function bindEvents(){
   $("export-btn").addEventListener("click", exportAll);
 }
 
-window.addEventListener("DOMContentLoaded", async () => {
+// ============================================================
+// 인증 — Supabase Auth (이메일 + 비밀번호)
+//  - 비밀번호는 이 코드가 저장하거나 해시하지 않는다. Supabase Auth 서버가 맡는다.
+//  - 로그인 상태(세션)는 supabase-js가 브라우저 저장소에 보관한다. 주소창(URL)에는 싣지 않는다.
+//  - 이 파일의 어디에서도 비밀번호·토큰을 console에 찍지 않는다.
+// ============================================================
+const AUTH_MIN_PASSWORD = 8;
+const AUTH_MSG = {
+  badLogin: "이메일 또는 비밀번호가 올바르지 않습니다.",   // 아이디가 없을 때와 비밀번호가 틀렸을 때 문구를 똑같이 쓴다
+  dup: "이미 가입된 이메일입니다. 로그인 탭에서 로그인해 주세요.",
+  email: "이메일 형식이 올바르지 않습니다.",
+  short: `비밀번호는 ${AUTH_MIN_PASSWORD}자 이상으로 입력해 주세요.`,
+  empty: "이메일과 비밀번호를 입력해 주세요.",
+  weak: "비밀번호가 너무 약합니다. 더 길고 다양한 글자로 만들어 주세요.",
+  limit: "시도가 너무 많습니다. 잠시 뒤에 다시 해 주세요.",
+  generic: "처리하지 못했습니다. 잠시 뒤에 다시 시도해 주세요.",
+  needConfirm: "가입 요청을 받았습니다. 이메일로 온 확인 링크를 누른 뒤 로그인해 주세요."
+};
+let authMode = "login";
+let authBusy = false;
+let appStarted = false;
+let leavingToLogin = false;
+
+function setAuthMsg(text, ok){
+  const el = $("auth-msg");
+  el.textContent = text || "";
+  el.classList.toggle("ok", !!ok);
+}
+function setAuthMode(mode){
+  authMode = mode === "signup" ? "signup" : "login";
+  $("auth-tab-login").classList.toggle("active", authMode === "login");
+  $("auth-tab-signup").classList.toggle("active", authMode === "signup");
+  $("auth-submit").textContent = authMode === "login" ? "로그인" : "가입하기";
+  $("auth-password").autocomplete = authMode === "login" ? "current-password" : "new-password";
+  $("auth-hint").textContent = authMode === "login"
+    ? "아직 계정이 없다면 위의 \"가입\" 탭을 눌러 주세요."
+    : `비밀번호는 ${AUTH_MIN_PASSWORD}자 이상. 가입하면 바로 로그인돼요.`;
+  setAuthMsg("");
+}
+function showAuthScreen(){ $("app-shell").hidden = true; $("auth-screen").hidden = false; }
+function showAppShell(user){
+  $("auth-screen").hidden = true;
+  $("app-shell").hidden = false;
+  $("user-chip").textContent = "👤 " + (user && user.email ? user.email : "");
+}
+// Supabase 오류 → 사람이 읽는 문구. 로그인 실패는 이유(아이디 없음/비밀번호 틀림)를 구분하지 않고 한 문구로 통일한다.
+function authErrorText(error, mode){
+  const code = error && error.code ? String(error.code) : "";
+  const status = error && error.status ? Number(error.status) : 0;
+  if (status === 429 || /rate_limit/.test(code)) return AUTH_MSG.limit;
+  if (mode === "login") return (code === "invalid_credentials" || status === 400) ? AUTH_MSG.badLogin : AUTH_MSG.generic;
+  if (code === "user_already_exists" || /already registered/i.test((error && error.message) || "")) return AUTH_MSG.dup;
+  if (code === "weak_password") return AUTH_MSG.weak;
+  if (code === "email_address_invalid" || code === "validation_failed") return AUTH_MSG.email;
+  return AUTH_MSG.generic;
+}
+async function submitAuth(){
+  if (authBusy) return;
+  const email = $("auth-email").value.trim();
+  const password = $("auth-password").value;
+  if (!email || !password){ setAuthMsg(AUTH_MSG.empty); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ setAuthMsg(AUTH_MSG.email); return; }
+  if (authMode === "signup" && password.length < AUTH_MIN_PASSWORD){ setAuthMsg(AUTH_MSG.short); return; }
+  authBusy = true;
+  $("auth-submit").disabled = true;
+  setAuthMsg("");
+  try {
+    if (authMode === "login"){
+      const { data, error } = await sb.auth.signInWithPassword({ email, password });
+      if (error){ setAuthMsg(authErrorText(error, "login")); return; }
+      $("auth-password").value = "";
+      await startApp(data.user);
+    } else {
+      const { data, error } = await sb.auth.signUp({ email, password });
+      if (error){ setAuthMsg(authErrorText(error, "signup")); return; }
+      // 이미 가입된 이메일인데 오류 없이 돌아오는 경우(확인 메일 설정이 켜져 있을 때): identities가 비어 있다
+      if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0){ setAuthMsg(AUTH_MSG.dup); return; }
+      if (!data.session){ setAuthMsg(AUTH_MSG.needConfirm, true); return; }
+      $("auth-password").value = "";
+      await startApp(data.user);
+    }
+  } catch (e) {
+    setAuthMsg(AUTH_MSG.generic);
+  } finally {
+    authBusy = false;
+    $("auth-submit").disabled = false;
+  }
+}
+// 로그아웃 뒤에는 페이지를 새로 읽어서, 이전 사람의 자료가 화면 메모리에 남지 않게 한다.
+function leaveToLogin(){
+  if (leavingToLogin) return;
+  leavingToLogin = true;
+  location.hash = "";
+  location.reload();
+}
+async function doLogout(){
+  try { await sb.auth.signOut(); } catch (e) { /* 서버에 못 닿아도 이 브라우저의 로그인 상태는 지운다 */ }
+  leaveToLogin();
+}
+
+// 앱 본체 시작: 로그인이 확인된 뒤에만 한 번 실행한다.
+async function startApp(user){
+  if (appStarted) return;
+  appStarted = true;
+  showAppShell(user);
   deck.viewDate = todayInTZ(getDisplayTZ());
   buildInspectorPalettes();
   initTimezonePicker();
@@ -1543,4 +1647,22 @@ window.addEventListener("DOMContentLoaded", async () => {
   setTimerButtons("idle");
   await refreshAll();
   await renderPage();
+}
+
+window.addEventListener("DOMContentLoaded", async () => {
+  $("auth-tab-login").addEventListener("click", () => setAuthMode("login"));
+  $("auth-tab-signup").addEventListener("click", () => setAuthMode("signup"));
+  $("auth-form").addEventListener("submit", (e) => { e.preventDefault(); submitAuth(); });
+  $("nav-logout").addEventListener("click", doLogout);
+  setAuthMode("login");
+
+  // 다른 탭에서 로그아웃했거나 로그인 상태가 끝나면 이 탭도 로그인 화면으로 돌린다. (콜백 안에서는 await 하지 않는다)
+  sb.auth.onAuthStateChange((event) => {
+    if (event === "SIGNED_OUT"){ if (appStarted) leaveToLogin(); else showAuthScreen(); }
+  });
+
+  let session = null;
+  try { ({ data: { session } } = await sb.auth.getSession()); } catch (e) { session = null; }
+  if (session && session.user) await startApp(session.user);
+  else showAuthScreen();
 });

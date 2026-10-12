@@ -9,17 +9,41 @@
 </head>
 <body>
 
+<!-- ===================== 로그인 화면 (로그인 전에는 이것만 보인다) ===================== -->
+<div class="auth-screen" id="auth-screen" hidden>
+  <div class="auth-card">
+    <div class="auth-brand"><span class="appbar-logo" aria-hidden="true">▣</span> 플랜두씨 덱</div>
+    <p class="auth-sub">Plan · Do · See — 로그인하면 내 자료만 보여요.</p>
+
+    <div class="auth-tabs" role="tablist" aria-label="로그인 또는 가입">
+      <button type="button" class="auth-tab active" id="auth-tab-login" role="tab" data-mode="login">로그인</button>
+      <button type="button" class="auth-tab" id="auth-tab-signup" role="tab" data-mode="signup">가입</button>
+    </div>
+
+    <form id="auth-form" method="post" action="#" onsubmit="return false;" novalidate>
+      <div class="field"><label for="auth-email">이메일</label><input type="email" id="auth-email" name="email" autocomplete="email" maxlength="120" placeholder="you@example.com"></div>
+      <div class="field"><label for="auth-password">비밀번호</label><input type="password" id="auth-password" name="password" autocomplete="current-password" maxlength="72" placeholder="8자 이상"></div>
+      <div class="auth-msg" id="auth-msg" role="alert" aria-live="polite"></div>
+      <button type="submit" class="btn primary auth-submit" id="auth-submit">로그인</button>
+    </form>
+    <p class="auth-hint" id="auth-hint">아직 계정이 없다면 위의 "가입" 탭을 눌러 주세요.</p>
+  </div>
+</div>
+
+<!-- ===================== 앱 본체 (로그인한 뒤에만 보인다) ===================== -->
+<div id="app-shell" hidden>
+
 <header class="appbar">
   <div class="appbar-left">
     <span class="appbar-logo" aria-hidden="true">▣</span>
     <span class="appbar-title">플랜두씨 덱</span>
     <span class="appbar-sub">Plan · Do · See — Stream Deck+ · Default</span>
   </div>
-  <div class="appbar-right"><span id="tz-chip" class="chip"></span><button class="tool-btn text" id="nav-home" type="button">🏠 덱</button><button class="tool-btn text" id="nav-menu" type="button">☰ 설정·사용법</button></div>
+  <div class="appbar-right"><span id="user-chip" class="chip" title="로그인한 계정"></span><span id="tz-chip" class="chip"></span><button class="tool-btn text" id="nav-home" type="button">🏠 덱</button><button class="tool-btn text" id="nav-menu" type="button">☰ 설정·사용법</button><button class="tool-btn text" id="nav-logout" type="button">로그아웃</button></div>
 </header>
 
 <div class="banner" role="note">
-  ⚠️ 지금은 로그인이 없어 링크를 아는 사람은 누구나 볼 수 있습니다. 남이 봐도 괜찮은 내용만 넣으세요.
+  ⚠️ 로그인 화면은 붙었지만, 자료를 "내 것만" 보이게 하는 서버 쪽 보호는 아직 적용 전입니다. 중요한 내용은 넣지 마세요.
 </div>
 
 <div class="timer-bar" id="timer-bar" role="status" hidden>
@@ -433,9 +457,12 @@
 </main>
 </div>
 
+</div><!-- /app-shell -->
+
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- 인증 라이브러리: Supabase JS 2.117.3 (버전 고정) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3"></script>
 <script src="config.js"></script>
 <script src="app.js"></script>
 </body>

@@ -48,6 +48,20 @@ h3{font-size:15px;margin:18px 0 10px;}
   padding:9px 18px;font-size:13px;text-align:center;
 }
 
+/* ---------- 로그인 화면 ---------- */
+.auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px;}
+.auth-card{width:100%;max-width:400px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:26px 24px;}
+.auth-brand{font-weight:800;font-size:20px;}
+.auth-sub{color:var(--muted);font-size:13px;margin:6px 0 18px;}
+.auth-tabs{display:flex;gap:6px;margin-bottom:16px;}
+.auth-tab{flex:1;padding:9px 0;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--muted);font-size:14px;font-family:inherit;cursor:pointer;}
+.auth-tab:hover{border-color:#3a4254;background:var(--card2);}
+.auth-tab.active{background:var(--accent-soft);border-color:var(--accent);color:var(--text);font-weight:700;}
+.auth-msg{min-height:20px;font-size:13px;color:var(--danger);margin:2px 0 10px;}
+.auth-msg.ok{color:var(--ok);}
+.auth-submit{width:100%;padding:11px 16px;font-size:15px;}
+.auth-hint{color:var(--muted);font-size:12px;margin:14px 0 0;text-align:center;}
+
 /* ---------- 작업 영역 ---------- */
 .workspace{
   display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px;
