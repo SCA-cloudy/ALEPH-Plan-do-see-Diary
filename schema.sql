@@ -1,3 +1,7 @@
+-- ※ T07 안내: 이 파일의 아래쪽 "public all …" 정책(누구나 읽고 쓰기)은 6번 시점의 스키마 기록입니다.
+--   T07에서 migrations/t07_01 ~ t07_06 순서로 실행해 정책을 "로그인한 본인 자료만"으로 교체했습니다.
+--   (user_id 칸 추가, own … 정책, 로그인 세션 확인 assert_session, 비밀번호 변경 시 세션 삭제, 계정 삭제 함수)
+--   새 프로젝트에 적용할 때는 이 파일 실행 뒤 반드시 migrations/t07_*.sql 을 이어서 실행하세요.
 -- PlanDoSee Deck (플랜두씨) 다이어리 — 전체 스키마 (새 Supabase 프로젝트용)
 -- Supabase SQL Editor에서 그대로 실행
 -- ※ 이미 v2 스키마를 실행한 프로젝트는 이 파일 대신 migration_001_schedule_icon_color.sql만 실행하세요.
